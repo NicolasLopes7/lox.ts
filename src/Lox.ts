@@ -2,16 +2,18 @@ import { readFileSync } from "fs";
 import { stdin as input, stdout as output } from "process";
 import * as readline from "readline";
 
+import { Scanner } from "./Scanner";
+
 class Lox {
   private hadError = false;
-  private scanner: readline.Interface;
+  private promptScanner: readline.Interface;
   constructor() {
-    this.scanner = readline.createInterface({ input, output });
+    this.promptScanner = readline.createInterface({ input, output });
   }
 
   private asyncQuestion(prefix: string) {
     return new Promise((resolve: (answer: string) => unknown) => {
-      this.scanner.question(prefix, resolve);
+      this.promptScanner.question(prefix, resolve);
     });
   }
 
@@ -20,15 +22,12 @@ class Lox {
     this.hadError = true;
   }
 
-  private error(line: number, where: string, message: string) {
-    return this.report(line, "", message);
-  }
-
   private async run(source: string) {
     this.hadError = false;
 
-    const tokens = source.split("");
-    console.log(tokens);
+    const scanner = new Scanner(source, this.report);
+    scanner.scanTokens();
+    console.log(scanner.tokens);
   }
 
   private async runPrompt() {
@@ -41,7 +40,7 @@ class Lox {
     };
 
     await runLine();
-    this.scanner.close();
+    this.promptScanner.close();
   }
 
   private runFile(path: string) {

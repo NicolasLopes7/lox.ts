@@ -26,27 +26,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = require("fs");
 const process_1 = require("process");
 const readline = __importStar(require("readline"));
+const Scanner_1 = require("./Scanner");
 class Lox {
     constructor() {
         this.hadError = false;
-        this.scanner = readline.createInterface({ input: process_1.stdin, output: process_1.stdout });
+        this.promptScanner = readline.createInterface({ input: process_1.stdin, output: process_1.stdout });
     }
     asyncQuestion(prefix) {
         return new Promise((resolve) => {
-            this.scanner.question(prefix, resolve);
+            this.promptScanner.question(prefix, resolve);
         });
     }
     report(line, where, message) {
         console.log(`[line ${line}] Error${where}: ${message}`);
         this.hadError = true;
     }
-    error(line, where, message) {
-        return this.report(line, "", message);
-    }
     async run(source) {
         this.hadError = false;
-        const tokens = source.split("");
-        console.log(tokens);
+        const scanner = new Scanner_1.Scanner(source, this.report);
+        scanner.scanTokens();
+        console.log(scanner.tokens);
     }
     async runPrompt() {
         const runLine = async () => {
@@ -54,14 +53,17 @@ class Lox {
             if (!line)
                 return;
             this.run(line);
+            this.hadError = false;
             return runLine();
         };
         await runLine();
-        this.scanner.close();
+        this.promptScanner.close();
     }
     runFile(path) {
         const source = (0, fs_1.readFileSync)(path, { encoding: "utf8" });
-        return this.run(source);
+        this.run(source);
+        if (this.hadError)
+            process.exit(65);
     }
     async execute(args) {
         if (args.length > 3) {
